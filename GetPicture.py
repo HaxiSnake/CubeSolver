@@ -55,7 +55,7 @@ def main():
     pic_path = args.picture_path
     pic_count = 0
     robot = None
-    if(len(args.serial_port)!=0):
+    if(len(args.serial_port)!=0):   
         robot = Driver.Robot(args.serial_port)
     while True:
         ret, img = cap.read()

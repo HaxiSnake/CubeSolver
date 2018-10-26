@@ -1,7 +1,7 @@
 import serial
 import time
 import os
-
+   
 CLOSE_TIME = 0.3
 OPEN_TIME  = 0.2
 HALF       = 0.2
