@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 
 picture_path='./pictures/light/'
-label_name='light_label.npy'
+label_name='test_label.npy'
 class ImgGenerator():
     def __init__(self,picture_path,group=0):
         self.img=None

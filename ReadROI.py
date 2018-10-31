@@ -1,74 +1,83 @@
 import numpy as np
 import cv2
 
+from Classes import ImgReader, CubeBase
+
 picture_path='./pictures/light/'
 label_name='light_label.npy'
-class ImgReader():
-    def __init__(self,picture_path,label_name,group=0):
-        self._path =picture_path
-        self._group=group
-        self.pics=[]
-        self.ROIS = None
-        try:
-            self.label_dic = np.load(label_name)
-            self.label_dic = self.label_dic[()]
-        except:
-            self.label_dic = {}
-            print("Can not find label file at %s"%(label_name))
-        self.readPics(0)      
-    def readPics(self,group):
-        self.pics=[]
-        self._group=group
-        for i in range(3):
-            name = self._path + str(group)+'_'+str(i)+'.jpg'
-            img  = cv2.imread(name)
-            if(img is None):
-                print("Can not find picture at %s"%(name))
-                img = cv2.imread(self._path+'default.jpg')
-            self.pics.append(img)
-        return self.pics
-    def perTrans(self,img,points):
-        dst = np.float32([[0,0],[0,149],[149,0],[149,149]])
-        src = np.float32(points)
-        MLft = cv2.getPerspectiveTransform(src[0:4],dst)
-        MRit = cv2.getPerspectiveTransform(src[2:],dst)
-        Lft = cv2.warpPerspective(img,MLft,(150,150))
-        Rit = cv2.warpPerspective(img,MRit,(150,150))
-        ROI = np.zeros((150,300,3),np.uint8)
-        ROI[0:,0:150]=Lft
-        ROI[0:,150:] =Rit
-        return ROI
-    def connectROI(self):
-        self.ROIS = np.zeros((450,300,3),np.uint8)
-        for i in range(3):
-            key = str(self._group)+'_'+str(i)+'.jpg'
-            points = self.label_dic[key]
-            ROI = self.perTrans(self.pics[i],points)
-            self.ROIS[150*i:150*(i+1),0:] = ROI
-        return self.ROIS
-    def update(self,group):
-        self.readPics(group)
-        self.connectROI()
-        return self.ROIS
-def drawPoints(points,img):
+
+   
+def drawPoints(points,img):  
     img=img.copy()
     for point in points:
         cv2.circle(img,point,2,(0,233,0),2)
     return img
+
+def calSoftHist(img_bgr):
+    bins={  0:[0,30,60,85,135,175,200,255],
+            1:[0,60,80,200,255],
+            2:[0,40,60,180,210,255]
+            }
+    hist=[]
+    img = cv2.cvtColor(img_bgr,cv2.COLOR_BGR2HSV)
+    PIXNUM = img.shape[0]*img.shape[1]
+    for i in range(3):
+        im = img[:,:,i]
+        for j in range(len(bins[i])-1):
+            mask = cv2.inRange(im,bins[i][j],bins[i][j+1])
+            mask = mask/255
+            hist.append(np.sum(mask))
+            # cv2.imshow(str(j)+'_'+str(i),mask)
+    hist = np.asarray(hist)/PIXNUM
+    return hist
+
+def drawHist(hist):
+    # print(hist)
+    shape=[200,320]
+    img = np.zeros(shape,np.uint8)
+    step = int(shape[1]/len(hist))
+    _white=(255,255,255)
+    for i,value in enumerate(hist):
+        intensity = int(value*shape[0])
+        cv2.rectangle(img,(i*step,shape[0]),((i+1)*step,shape[0]-intensity),_white,-1)
+    cv2.imshow('hist',img)
+
 cv2.namedWindow("img")
 
 counter = 0 
 img_reader=ImgReader(picture_path,label_name)
 img = img_reader.update(counter)
+
+cube = CubeBase()
+result=cube.update(img)
+result_img = cube.drawResult()
+print(result)
 counter+=1
+
+cv2.imshow('img',img)
+cv2.imshow('result',result_img)
+count = 0
 while True:
-    cv2.imshow('img',img)
-    ch=cv2.waitKey(1)
-    if ch == 27:   
+    # hist=calSoftHist(img_reader.colors[count])
+    # drawHist(hist)
+    key = cv2.waitKey(1)
+    if key == 27:   
         break
-    if ch == ord('n'):#next
-        img=img_reader.update(counter)
-        counter+=1
+    if (key == ord('n')):
+        count+=1
+# hist=calSoftHist(img_reader.colors[0])
+# drawHist(hist)
+# cv2.waitKey(0)
+cv2.destroyAllWindows()
+# while True:
+#     cv2.imshow('img',img)
+
+#     ch=cv2.waitKey(1)
+#     if ch == 27:   
+#         break
+#     if ch == ord('n'):#next
+#         img=img_reader.update(counter)
+#         counter+=1
     # if ch == ord('s'):#save points
         # pass
     
