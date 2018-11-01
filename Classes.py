@@ -181,8 +181,8 @@ class CubeBase():
         
         with open(out_file_name,'a+') as out:
             for feature in self.features:
-                line=feature
-                line.append(-1)
-                line.append(group)
+                line=[str(num) for num in feature]
+                line.append(str(-1))
+                line.append(str(group))
                 line=','.join(line)
                 out.write(line+'\n')

@@ -4,7 +4,7 @@ import cv2
 from Classes import ImgReader, CubeBase
 
 picture_path='./pictures/light/'
-label_name='light_label.npy'
+label_name='./labels/light_label.npy'
 
    
 def drawPoints(points,img):  
