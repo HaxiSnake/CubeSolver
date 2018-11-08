@@ -27,12 +27,10 @@ def calSoftHist(img_bgr):
             mask = cv2.inRange(im,bins[i][j],bins[i][j+1])
             mask = mask/255
             hist.append(np.sum(mask))
-            # cv2.imshow(str(j)+'_'+str(i),mask)
     hist = np.asarray(hist)/PIXNUM
     return hist
 
 def drawHist(hist):
-    # print(hist)
     shape=[200,320]
     img = np.zeros(shape,np.uint8)
     step = int(shape[1]/len(hist))
@@ -47,41 +45,20 @@ cv2.namedWindow("img")
 counter = 0 
 img_reader=ImgReader(picture_path,label_name)
 img = img_reader.update(counter)
-
-cube = CubeBase()
-result=cube.update(img)
-result_img = cube.drawResult()
-print(result)
 counter+=1
-
-cv2.imshow('img',img)
-cv2.imshow('result',result_img)
-count = 0
 while True:
-    # hist=calSoftHist(img_reader.colors[count])
-    # drawHist(hist)
+    cv2.imshow('img',img)
+    print("%d group"%(counter-1))
     key = cv2.waitKey(1)
     if key == 27:   
         break
     if (key == ord('n')):
-        count+=1
-# hist=calSoftHist(img_reader.colors[0])
-# drawHist(hist)
-# cv2.waitKey(0)
+        img=img_reader.update(counter)
+        counter+=1
 cv2.destroyAllWindows()
-# while True:
-#     cv2.imshow('img',img)
 
-#     ch=cv2.waitKey(1)
-#     if ch == 27:   
-#         break
-#     if ch == ord('n'):#next
-#         img=img_reader.update(counter)
-#         counter+=1
-    # if ch == ord('s'):#save points
-        # pass
     
         
     
 
-    
+       

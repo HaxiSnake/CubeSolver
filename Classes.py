@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from sklearn.cluster import KMeans
 
 class ImgReader():
     def __init__(self,picture_path,label_name,group=0):
@@ -105,7 +106,11 @@ class CubeBase():
         return hist 
     def calDistance(self,x1,x2):
         """ 计算欧式距离 """
-        subarray = x1 - x2
+        subarray = x1 - x2     
+        return np.sum(np.abs(subarray))
+    def L_one(self,x1,x2):
+        """ 一范数 """
+        subarray = x1 - x2     
         return np.sum(np.abs(subarray))
     def _KNN(self,target_id,k):
         target = self.features[target_id]
@@ -119,6 +124,33 @@ class CubeBase():
         for m in range(k):
             ranklist.append(sim_sorted[m][1])
         return ranklist
+    def detectSurfaceWithGraph(self):
+        knn_graph = []
+        order=['F','R','L','D','U','B']
+        for i in range(6):
+            center = self.features[i*9+4]
+            for j in range(54):
+               if j == i*9+4:
+                   continue
+               dist = self.L_one(center,self.features[j])
+               knn_graph.append([i,j,dist])
+        sim_sorted = sorted(knn_graph,key=lambda dis:dis[2])
+        
+            
+                                                                                                                     
+    
+    def newDetectSurface(self):
+        blocks = np.asarray(self.features)
+        kmeans = KMeans(n_clusters=6,random_state=10).fit(blocks)
+        print(len(kmeans.labels_))
+        print(kmeans.labels_)
+        order=['F','R','L','D','U','B']
+        labels=kmeans.labels_
+        for i in range(6):
+            target_id = 9*i+4
+            center_color=labels[target_id]
+            temp = np.where(labels==center_color)[0]
+            self.surface[order[i]]=temp.tolist()
     def detectSurface(self):
         """ 魔方识别 """
         order=['F','R','L','D','U','B']
@@ -168,7 +200,16 @@ class CubeBase():
                 x1,x2,y1,y2 = self.getRegin(index)
                 self.result[y1:y2,x1:x2,:]=colors[t[key]]
         return self.result
+    def test(self,ROIimg):
+        self.__init__()
+        self.ROIS=ROIimg
+        self.splitColors()
+        self.getFeatures()
+        self.newDetectSurface()
+        print(self.surface)
+        return self.surface
     def update(self,ROIimg):
+        self.__init__()
         self.ROIS=ROIimg
         self.splitColors()
         self.getFeatures()
@@ -186,3 +227,91 @@ class CubeBase():
                 line.append(str(group))
                 line=','.join(line)
                 out.write(line+'\n')
+
+class ColorReader():
+    def __init__(self,color_label_path):
+        try:
+            self.color_file = open(color_label_path,'r')
+        except IOError:
+            print("open %s failed!"%(color_label_path))
+        self.group=-1
+        self.labels=[]
+        self.result=np.zeros((450,300,3),np.uint8)
+    def readLabels(self):
+        self.labels=[]
+        self.group+=1
+        for i in range(54):
+            line=self.color_file.readline()
+            line=line.rstrip('\n').split(',')
+            if(int(line[-1])==self.group):
+                self.labels.append(int(line[-2]))
+            else:
+                print("Not in the same group!")
+    def drawLabels(self):
+        colors = {
+           -1: (  0,  0,  0), #black
+            0: (  0,255,  0), #green
+            1: (255,255,255), #white
+            2: (  0,255,255), #yellow
+            3: (  0,  0,255), #red
+            4: (  0, 97,255), #orange
+            5: (255,  0,  0)  #blue
+            }
+        for index,key in enumerate(self.labels):
+            x1,x2,y1,y2 = self.getRegin(index)
+            self.result[y1:y2,x1:x2,:]=colors[key]
+        return self.result
+    def getRegin(self,index):
+        face = index//9
+        pos = index%9
+        x1=(face%2)*150 + (pos%3)*50
+        x2=x1+50
+        y1=(face//2)*150 + (pos//3)*50
+        y2=y1+50
+        return x1,x2,y1,y2
+    def update(self):
+        self.readLabels()
+        img=self.drawLabels()
+        return img
+    def __del__(self):
+        if self.color_file is not None:
+            self.color_file.close()
+    
+
+result={'F': [ 4, 3, 5, 20, 18, 26, 44, 48, 50], 
+        'B': [49, 7,15, 30, 25,  9, 38, 16, 53], 
+        'L': [22, 1, 8, 12, 21, 24, 36, 46, 47], 
+        'R': [13,32,10, 17, 51, 52, 27,  2, 19], 
+        'U': [40, 0, 6, 28, 29, 34, 37, 42, 43], 
+        'D': [31,33,23, 41, 14, 45, 11, 35, 39]}
+class ValidateClass():
+    def __init__(self):
+        self.confuse=[]
+        self.sum=0
+    def validate(self,group,result,labels):
+        if(type(result).__name__!='dict' and type(labels).__name__!='list'):
+            print("Wrong input type!")
+            exit()
+        center={'F':4,'R':13,'L':22,'D':31,'U':40,'B':49}
+        if(group==1):
+            print(group,labels)
+            for i in range(6):
+                print(labels[i*9:(i+1)*9])
+        for key,item in result.items():
+            if(group==1):
+                print(key)
+                print(item)
+            this_color = labels[center[key]]
+            for block in item:
+                self.sum+=1
+                if labels[block] != this_color:
+                    self.confuse.append([group,block,labels[block],this_color])
+    def showResult(self):
+        color={0:"green ",1:"white ",2:"yellow",3:"red   ",4:"orange",5:"blue  "}
+        print("Incorrect Colors")
+        print("group\tposition\ttrue_color\tfalse_color")
+        for info in self.confuse:
+            print("%d\t%d\t\t%s\t\t%s"%(info[0],info[1],color[info[2]],color[info[3]]))
+        print("acc is %f %% "%( 100-100*len(self.confuse)/self.sum ))
+
+    
