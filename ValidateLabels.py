@@ -3,7 +3,7 @@ import cv2
 
 from Classes import ImgReader, CubeBase, ColorReader
 
-condition='dark'
+condition='light'
 picture_path='./pictures/'+condition+'/'
 label_name='./labels/'+condition+'_label.npy'
 feature_file='./labels/'+condition+'_feature.csv'

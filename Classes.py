@@ -128,24 +128,27 @@ class CubeBase():
         self.surface={ 'F':[],'B':[],'L':[],'R':[],'U':[],'D':[]}
         knn_graph = []
         order=['F','R','L','D','U','B']
+        center_id = [9*i+4 for i in range(6)]
         for i in range(6):
             self.surface[order[i]].append(i*9+4)
             center = self.features[i*9+4]
             for j in range(54):
-               if j == i*9+4:
+               if j in center_id:
                    continue
                dist = self.L_one(center,self.features[j])
                knn_graph.append([i,j,dist])
         sim_sorted = sorted(knn_graph,key=lambda dis:dis[2])
         full_face = []
+        has_detected_block=[]
         for item in sim_sorted:
             face,block_id,dist = item
             if len(full_face) == 6:
                 break
-            if face in full_face:
+            if face in full_face or block_id in has_detected_block:
                 continue
             self.surface[order[face]].append(block_id)
-            if len(self.surface[order[face]]) == 6:
+            has_detected_block.append(block_id)
+            if len(self.surface[order[face]]) == 9:
                 full_face.append(face)  
     def newDetectSurface(self):
         blocks = np.asarray(self.features)
@@ -301,12 +304,12 @@ class ValidateClass():
             print("Wrong input type!")
             exit()
         center={'F':4,'R':13,'L':22,'D':31,'U':40,'B':49}
-        if(group==1):
+        if(group==5):
             print(group,labels)
             for i in range(6):
                 print(labels[i*9:(i+1)*9])
         for key,item in result.items():
-            if(group==1):
+            if(group==5):
                 print(key)
                 print(item)
             this_color = labels[center[key]]
