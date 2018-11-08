@@ -125,9 +125,11 @@ class CubeBase():
             ranklist.append(sim_sorted[m][1])
         return ranklist
     def detectSurfaceWithGraph(self):
+        self.surface={ 'F':[],'B':[],'L':[],'R':[],'U':[],'D':[]}
         knn_graph = []
         order=['F','R','L','D','U','B']
         for i in range(6):
+            self.surface[order[i]].append(i*9+4)
             center = self.features[i*9+4]
             for j in range(54):
                if j == i*9+4:
@@ -135,10 +137,16 @@ class CubeBase():
                dist = self.L_one(center,self.features[j])
                knn_graph.append([i,j,dist])
         sim_sorted = sorted(knn_graph,key=lambda dis:dis[2])
-        
-            
-                                                                                                                     
-    
+        full_face = []
+        for item in sim_sorted:
+            face,block_id,dist = item
+            if len(full_face) == 6:
+                break
+            if face in full_face:
+                continue
+            self.surface[order[face]].append(block_id)
+            if len(self.surface[order[face]]) == 6:
+                full_face.append(face)  
     def newDetectSurface(self):
         blocks = np.asarray(self.features)
         kmeans = KMeans(n_clusters=6,random_state=10).fit(blocks)
@@ -205,7 +213,7 @@ class CubeBase():
         self.ROIS=ROIimg
         self.splitColors()
         self.getFeatures()
-        self.newDetectSurface()
+        self.detectSurfaceWithGraph()
         print(self.surface)
         return self.surface
     def update(self,ROIimg):

@@ -17,8 +17,8 @@ class Controller():
     def run(self,maxgroup=11):
         for i in range(maxgroup):
             img=self.img_reader.update(i)
-            result=self.cube.update(img)
-            # result=self.cube.test(img)
+            # result=self.cube.update(img)
+            result=self.cube.test(img)
             self.color_reader.update()
             self.verifier.validate(i,result,self.color_reader.labels)
         self.verifier.showResult()
