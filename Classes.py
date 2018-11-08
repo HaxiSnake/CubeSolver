@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import math
 from sklearn.cluster import KMeans
 
 class ImgReader():
@@ -86,6 +87,25 @@ class CubeBase():
             feature = self.calSoftHist(img)
             self.features.append(feature)
         #print(self.features)
+    
+    def getHsvFeatures(self):
+        self.hsv_features=[]
+        for img in self.colors:
+            feature = self.calHsv(img)
+            self.hsv_features.append(feature)
+    def calHsv(self,img_bgr):
+        """ HSV 三维特征"""
+        img = cv2.cvtColor(img_bgr,cv2.COLOR_BGR2HSV)
+        hsv_h = cv2.calcHist([img],[0],None,[256],[0,256])
+        hsv_s = cv2.calcHist([img],[1],None,[256],[0,256])
+        hsv_v = cv2.calcHist([img],[2],None,[256],[0,256])
+        h=hsv_h.argmax()
+        s=hsv_s.argmax()
+        v=hsv_v.argmax()
+        hist_item=[h,s,v]
+        hist=np.int32(np.around(hist_item))
+        return hist
+
     def calSoftHist(self,img_bgr):
         """计算直方图"""
         bins={  0:[0,30,60,85,135,175,200,255],
@@ -105,25 +125,102 @@ class CubeBase():
         hist = np.asarray(hist)/PIXNUM
         return hist 
     def calDistance(self,x1,x2):
-        """ 计算欧式距离 """
         subarray = x1 - x2     
         return np.sum(np.abs(subarray))
+    def calDistance_w(self,x1,x2,color='n'):
+        '''欧式距离'''
+        if color == 'n':
+            w = np.asarray([[100, 0, 0],[0, 1, 0],[0, 0, 1]])
+        elif color == 'w':
+            w = np.asarray([[0, 0, 0],[0, 100, 0],[0, 0, 1]])
+        elif color in "bgy":
+            w = np.asarray([[100, 0, 0],[0, 1, 0],[0, 0, 1]])
+        elif color in "ro":
+            w = np.asarray([[0, 0, 0],[0, 0, 0],[0, 0, 150]])
+        else:
+            w = np.asarray([[100, 0, 0],[0, 1, 0],[0, 0, 1]])
+        subarray = x1 - x2
+        subarray =  np.dot(subarray,w) 
+        return math.sqrt(np.dot(subarray,subarray))    
     def L_one(self,x1,x2):
         """ 一范数 """
         subarray = x1 - x2     
         return np.sum(np.abs(subarray))
-    def _KNN(self,target_id,k):
-        target = self.features[target_id]
+    def _KNN(self,target_id,k,fea='soft'):
+        if fea=='soft':
+            features=self.features
+        elif fea=='hsv':
+            features=self.hsv_features
+        target = features[target_id]
         similarityList=[]
         for i in range(54):
             if self.isUsed[i]:
                 continue
-            similarityList.append((self.calDistance(target,self.features[i]),i))
+            similarityList.append((self.calDistance(target,features[i]),i))
         sim_sorted=sorted(similarityList,key=lambda dis:dis[0])
         ranklist=[]
         for m in range(k):
             ranklist.append(sim_sorted[m][1])
         return ranklist
+    def _KNN_W(self,target_id,k,fea='hsv',color='n'):
+        if fea=='soft':
+            features=self.features
+        elif fea=='hsv':
+            features=self.hsv_features
+        target = features[target_id]
+        similarityList=[]
+        for i in range(54):
+            if self.isUsed[i]:
+                continue
+            similarityList.append((self.calDistance_w(target,features[i],color),i))
+        sim_sorted=sorted(similarityList,key=lambda dis:dis[0])
+        ranklist=[]
+        for m in range(k):
+            ranklist.append(sim_sorted[m][1])
+        return ranklist
+    def detectSurfaceWithHSV(self):
+        """ 魔方识别 """
+        white_s = 256
+        white_id = 4
+        # find white center
+        for i in range(6):
+            if self.hsv_features[9*i+4][1] < white_s:
+                white_s = self.hsv_features[9*i+4][1]
+                white_id = 9*i+4
+        # find white color
+        order=['F','R','L','D','U','B']
+        p = (white_id-4)//9
+        self.surface[order[p]][0]=white_id
+        self.isUsed[white_id]=1
+        ranklist=self._KNN_W(white_id,2,'hsv','w')
+        for j in range(2):
+            self.surface[order[p]][j+1]=ranklist[j]
+            self.isUsed[ranklist[j]]=1
+        for j in range(2):
+            target_id = self.surface[order[p]][j+1]
+            ranklist_3 = self._KNN_W(target_id,3,'hsv','w')
+            for k in range(3):
+                self.surface[order[p]][(j+1)*3+k]=ranklist_3[k]
+                self.isUsed[ranklist_3[k]]=1
+        for i in range(6):
+            if i == p:
+                continue
+            target_id = 9*i+4
+            self.surface[order[i]][0]=target_id
+            self.isUsed[target_id]=1
+            ranklist=self._KNN_W(target_id,2,'hsv')
+            for j in range(2):
+                self.surface[order[i]][j+1]=ranklist[j]
+                self.isUsed[ranklist[j]]=1
+        for i in range(6):
+            if i == p:
+                continue
+            for j in range(2):
+                target_id = self.surface[order[i]][j+1]
+                ranklist = self._KNN_W(target_id,3,'hsv')
+                for k in range(3):
+                    self.surface[order[i]][(j+1)*3+k]=ranklist[k]
+                    self.isUsed[ranklist[k]]=1
     def detectSurfaceWithGraph(self):
         self.surface={ 'F':[],'B':[],'L':[],'R':[],'U':[],'D':[]}
         knn_graph = []
@@ -150,7 +247,7 @@ class CubeBase():
             has_detected_block.append(block_id)
             if len(self.surface[order[face]]) == 9:
                 full_face.append(face)  
-    def newDetectSurface(self):
+    def detectSurfaceWithKmeans(self):
         blocks = np.asarray(self.features)
         kmeans = KMeans(n_clusters=6,random_state=10).fit(blocks)
         print(len(kmeans.labels_))
@@ -215,8 +312,8 @@ class CubeBase():
         self.__init__()
         self.ROIS=ROIimg
         self.splitColors()
-        self.getFeatures()
-        self.detectSurfaceWithGraph()
+        self.getHsvFeatures()
+        self.detectSurfaceWithHSV()
         print(self.surface)
         return self.surface
     def update(self,ROIimg):
@@ -304,12 +401,13 @@ class ValidateClass():
             print("Wrong input type!")
             exit()
         center={'F':4,'R':13,'L':22,'D':31,'U':40,'B':49}
-        if(group==5):
+        outgroup=3
+        if(group==outgroup):
             print(group,labels)
             for i in range(6):
                 print(labels[i*9:(i+1)*9])
         for key,item in result.items():
-            if(group==5):
+            if(group==outgroup):
                 print(key)
                 print(item)
             this_color = labels[center[key]]

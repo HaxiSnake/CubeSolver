@@ -23,5 +23,5 @@ class Controller():
             self.verifier.validate(i,result,self.color_reader.labels)
         self.verifier.showResult()
 
-main = Controller('light')
+main = Controller('dark')
 main.run()
