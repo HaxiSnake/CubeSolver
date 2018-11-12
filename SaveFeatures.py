@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 
 from Classes import ImgReader, CubeBase
-condition='test'
+condition='cube2_up_light'
 picture_path='./pictures/'+condition+'/'
 label_name='./labels/'+condition+'_label.npy'
 feature_file='./labels/'+condition+'_feature.csv'

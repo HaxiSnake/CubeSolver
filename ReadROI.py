@@ -3,8 +3,11 @@ import cv2
 
 from Classes import ImgReader, CubeBase
 
-picture_path='./pictures/light/'
-label_name='./labels/light_label.npy'
+condition='cube2_light'
+picture_path='./pictures/'+condition+'/'
+label_name='./labels/'+condition+'_label.npy'
+feature_file='./labels/'+condition+'_feature.csv'
+roi_path=picture_path+'rois/'
 
    
 def drawPoints(points,img):  
@@ -42,7 +45,7 @@ def drawHist(hist):
 
 cv2.namedWindow("img")
 
-counter = 0 
+counter = 0
 img_reader=ImgReader(picture_path,label_name)
 img = img_reader.update(counter)
 counter+=1

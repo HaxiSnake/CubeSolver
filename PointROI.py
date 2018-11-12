@@ -1,8 +1,12 @@
 import numpy as np
 import cv2
 
-picture_path='./pictures/light/'
-label_name='test_label.npy'
+condition='cube2_up_light'
+picture_path='./pictures/'+condition+'/'
+label_name='./labels/'+condition+'_label.npy'
+feature_file='./labels/'+condition+'_feature.csv'
+roi_path=picture_path+'rois/'
+
 class ImgGenerator():
     def __init__(self,picture_path,group=0):
         self.img=None
@@ -65,12 +69,15 @@ cv2.namedWindow("img")
 mouse = lambda e,x,y,f,p: mouse_info.onMouse(e,x,y,f,p)
 cv2.setMouseCallback("img",mouse)
 
-img_reader=ImgGenerator(picture_path)
+img_reader=ImgGenerator(picture_path,group=1)
 
 writer = LabelRecoder()
 
 while True:
-    img=drawPoints(mouse_info.points,img_reader.img)
+    try:
+        img=drawPoints(mouse_info.points,img_reader.img)
+    except AttributeError:
+        writer.saveLabel(label_name)
     cv2.imshow('img',img)
     ch=cv2.waitKey(1)
     if ch == 27:   
