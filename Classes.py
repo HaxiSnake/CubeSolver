@@ -264,9 +264,6 @@ class CubeBase():
         #         for k in range(3):
         #             self.surface[face[f]][(j+1)*3+k]=ranklist[k]
         #             self.isUsed[ranklist[k]]=1
-
-
-
     def detectSurfaceWithGraph(self):
         self.surface={ 'F':[],'B':[],'L':[],'R':[],'U':[],'D':[]}
         knn_graph = []
@@ -398,7 +395,19 @@ class CubeBase():
                     line.append(str(group))
                     line=','.join(line)
                     out.write(line+'\n')
-        
+        elif ftype=="all":
+            self.getFeatures()
+            self.getHsvFeatures()
+            with open(out_file_name,'a+') as out:
+                for i in range(len(self.features)):
+                    fea = self.features[i]
+                    hsv = self.hsv_features[i]
+                    fea_s = [str(num) for num in fea]
+                    hsv_s = [str(num) for num in hsv]
+                    line = fea_s + hsv_s
+                    line.append(str(group))
+                    line=','.join(line)
+                    out.write(line+'\n')
 
 class ColorReader():
     def __init__(self,color_label_path):

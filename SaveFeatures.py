@@ -4,10 +4,11 @@ import cv2
 from Classes import ImgReader, CubeBase
 conditions = ["cube1_dark","cube1_light","cube2_light","cube2_right_light","cube2_up_light"]
 for condition in conditions:
-    features="hsv"
+    features="all"
     picture_path='./pictures/'+condition+'/'
     label_name='./labels/'+condition+'_label.npy'
-    feature_file='./labels/'+condition+'_'+features+'_feature.csv'
+    # feature_file='./labels/'+condition+'_'+features+'_feature.csv'
+    feature_file='./labels/'+"feature_"+condition+'.csv'
     roi_path=picture_path+'rois/'
     cv2.namedWindow("img")
     counter = 0 
