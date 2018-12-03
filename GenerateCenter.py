@@ -3,9 +3,8 @@ import cv2
 from Classes import ColorReader
 # conditions=['light','dark']
 conditions=["cube1_dark","cube1_light","cube2_light","cube2_right_light","cube2_up_light"]
-feature="_hsv"
 for condition in conditions:
-    feature_file='./labels/'+condition+feature+'_feature.csv'
+    feature_file='./labels/'+condition+'_labels.csv'
     center_name="./labels/"+condition+"_center.npy"
     color_reader=ColorReader(feature_file)
     center_dict={}

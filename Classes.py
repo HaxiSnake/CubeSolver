@@ -132,11 +132,11 @@ class CubeBase():
         if color == 'n':
             w = np.asarray([[100, 0, 0],[0, 1, 0],[0, 0, 1]])
         elif color == 'w':
-            w = np.asarray([[0, 0, 0],[0, 100, 0],[0, 0, 0]])
+            w = np.asarray([[0, 0, 0],[0, 120, 0],[0, 0, 0]])
         elif color in "bgy":
             w = np.asarray([[100, 0, 0],[0, 1, 0],[0, 0, 1]])
         elif color in "ro":
-            w = np.asarray([[0, 0, 0],[0, 45, 0],[0, 0, 15]])
+            w = np.asarray([[0, 0, 0],[0, 85, 0],[0, 0, 48]])
         else:
             w = np.asarray([[100, 0, 0],[0, 1, 0],[0, 0, 1]])
         subarray = x1 - x2
@@ -309,17 +309,28 @@ class CubeBase():
             target_id = 9*i+4
             self.surface[order[i]][0]=target_id
             self.isUsed[target_id]=1
-            ranklist=self._KNN(target_id,2)
+            ranklist=self._KNN(target_id,2,fea='soft')
             for j in range(2):
                 self.surface[order[i]][j+1]=ranklist[j]
                 self.isUsed[ranklist[j]]=1
         for i in range(6):
             for j in range(2):
                 target_id = self.surface[order[i]][j+1]
-                ranklist = self._KNN(target_id,3)
+                ranklist = self._KNN(target_id,3,fea='soft')
                 for k in range(3):
                     self.surface[order[i]][(j+1)*3+k]=ranklist[k]
                     self.isUsed[ranklist[k]]=1
+    def detectSurfaceWithKNN(self):
+        """ 魔方识别 """
+        order=['F','R','L','D','U','B']
+        for i in range(6):
+            target_id = 9*i+4
+            self.surface[order[i]][0]=target_id
+            self.isUsed[target_id]=1
+            ranklist=self._KNN(target_id,8,fea='soft')
+            for j in range(8):
+                self.surface[order[i]][j+1]=ranklist[j]
+                self.isUsed[ranklist[j]]=1
     def getRegin(self,index):
         face = index//9
         pos = index%9
@@ -356,7 +367,8 @@ class CubeBase():
         self.ROIS=ROIimg
         self.splitColors()
         self.getHsvFeatures()
-        self.detectSurfaceWithHSV()
+        self.getFeatures()
+        self.detectSurface()
         # print(self.surface)
         return self.surface
     def onlineUpdate(self,ROIimg,center_label):
@@ -372,6 +384,7 @@ class CubeBase():
         self.ROIS=ROIimg
         self.splitColors()
         self.getFeatures()
+        self.getHsvFeatures()
         self.detectSurface()
         return self.surface
     def saveFeatures(self,ROIimg,out_file_name,group,ftype="16"):

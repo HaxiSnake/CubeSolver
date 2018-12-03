@@ -3,7 +3,7 @@ import cv2
 
 from Classes import ImgReader, CubeBase
 
-condition='cube2_light'
+condition='cube1_light'
 picture_path='./pictures/'+condition+'/'
 label_name='./labels/'+condition+'_label.npy'
 feature_file='./labels/'+condition+'_feature.csv'
@@ -59,9 +59,3 @@ while True:
         img=img_reader.update(counter)
         counter+=1
 cv2.destroyAllWindows()
-
-    
-        
-    
-
-       

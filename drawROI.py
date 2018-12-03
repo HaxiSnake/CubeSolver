@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-condition='cube1_light'
+condition='cube1_dark'
 picture_path='./pictures/'+condition+'/'
 label_name='./labels/'+condition+'_label.npy'
 feature_file='./labels/'+condition+'_feature.csv'
@@ -51,10 +51,8 @@ class MouseInfo():
     def isReady(self):
         return len(self.points) == self.keynumber
 class LabelRecoder():
-    def __init__(self,point_label_path):
-
-        self.label=np.load(point_label_path)
-        self.label=self.label[()]
+    def __init__(self):
+        self.label={}
     def insertLabel(self,key,points):
         print("insert %s label"%(key))
         self.label[key]=points
@@ -73,33 +71,33 @@ cv2.setMouseCallback("img",mouse)
 
 img_reader=ImgGenerator(picture_path,group=1)
 
-writer = LabelRecoder(label_name)
+def perTrans(img,points):
+    dst = np.float32([[0,0],[0,149],[149,0],[149,149]])
+    src = np.float32(points)
+    MLft = cv2.getPerspectiveTransform(src[0:4],dst)
+    MRit = cv2.getPerspectiveTransform(src[2:],dst)
+    Lft = cv2.warpPerspective(img,MLft,(150,150))
+    Rit = cv2.warpPerspective(img,MRit,(150,150))
+    ROI = np.zeros((150,300,3),np.uint8)
+    ROI[0:,0:150]=Lft
+    ROI[0:,150:] =Rit
+    return ROI
 
 while True:
-    try:
-        img=drawPoints(mouse_info.points,img_reader.img)
-    except AttributeError:
-        writer.saveLabel(label_name)
+    img=drawPoints(mouse_info.points,img_reader.img)
     cv2.imshow('img',img)
+    if mouse_info.isReady():
+        roi=perTrans(img,mouse_info.points)
+        cv2.imshow('roi',roi)
     ch=cv2.waitKey(1)
     if ch == 27:   
         break
     if ch == ord('n'):#next
-        if(mouse_info.isReady()):
-            writer.insertLabel(img_reader.name,mouse_info.points)
         mouse_info.resetPoints()
         img_reader.update()
     if ch == ord('r'):#reset
         mouse_info.resetPoints()
-    if ch == ord('s'):#save points
-        if(mouse_info.isReady()):
-            writer.insertLabel(img_reader.name,mouse_info.points)
-    if ch == ord('e'):#end
-        writer.saveLabel(label_name)
-    if ch == ord('t'):
-        test = np.load(label_name)
-        print("read %s"%(label_name))
-        print(test)
+
     
         
     

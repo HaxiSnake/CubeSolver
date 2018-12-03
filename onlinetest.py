@@ -9,7 +9,7 @@ class Controller():
         self.condition=condition
         self.picture_path='./pictures/'+condition+'/'
         self.label_name='./labels/'+condition+'_label.npy'
-        self.feature_file='./labels/'+condition+'_hsv_feature.csv'
+        self.feature_file='./labels/'+condition+'_labels.csv'
         self.center_file='./labels/'+condition+'_center.npy'
         # self.counter=0
         self.img_reader=ImgReader(self.picture_path,self.label_name)
@@ -23,8 +23,8 @@ class Controller():
             img=self.img_reader.update(i)
             center=self.center.getCenter(i)
             # print(center)
-            result=self.cube.onlineUpdate(img,center)
-            
+            # result=self.cube.onlineUpdate(img,center)
+            result=self.cube.test(img)
             self.color_reader.update(i)
             self.verifier.validate(i,result,self.color_reader.cur_labels)
         print("dataset:",self.condition)
@@ -32,7 +32,7 @@ class Controller():
 
 # key="cube1_dark"
 conditions={"cube1_dark":25,
-            "cube1_light":26,
+            "cube1_light":25,
             "cube2_light":24,
             "cube2_right_light":23,
             "cube2_up_light":19}
